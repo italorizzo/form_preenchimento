@@ -25,19 +25,32 @@
 
   <script>
     async function openPiP() {
-      if (!('documentPictureInPicture' in window)) {
-        alert('Seu navegador não suporta Document PiP. Use o modo popup.');
-        return;
+        if (!('documentPictureInPicture' in window)) {
+          alert('Seu navegador não suporta Document PiP. Use o modo popup.');
+          return;
+        }
+        const pipWin = await documentPictureInPicture.requestWindow({ width: 420, height: 640 });
+        const d = pipWin.document;
+
+        // garante que a janela PiP tenha fundo e altura corretos
+        d.documentElement.style.height = '100%';
+        d.body.style.margin = '0';
+        d.body.style.height = '100%';
+        d.body.style.background = '#0b0c10'; // cor do seu tema
+
+        const iframe = d.createElement('iframe');
+        iframe.src = './pip-form.html';
+        iframe.style.cssText = `
+          position: fixed;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+          display: block;
+          background: #0b0c10; /* evita “flash” branco */
+        `;
+        d.body.appendChild(iframe);
       }
-      const pipWin = await documentPictureInPicture.requestWindow({width: 420, height: 640});
-      const iframe = pipWin.document.createElement('iframe');
-      iframe.src = './pip-form.html';
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = '0';
-      pipWin.document.body.style.margin = '0';
-      pipWin.document.body.appendChild(iframe);
-    }
 
     function openPopup() {
       const popup = window.open('./pip-form.html', 'formPopup', 'width=420,height=640');
