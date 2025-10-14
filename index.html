@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Form Comercial</title>
+  <style>
+    body {font-family: system-ui, sans-serif; background:#0b0c10; color:#e5e7eb; margin:0; padding:24px;}
+    h1 {margin:0 0 12px;}
+    p {color:#9aa3af;}
+    button {
+      border:0; padding:12px 18px; border-radius:10px; cursor:pointer;
+      font-weight:700; font-size:15px;
+    }
+    #open {background:#22c55e; color:#000;}
+    #popup {background:transparent; border:1px solid #334155; color:#e5e7eb; margin-left:8px;}
+  </style>
+</head>
+<body>
+  <h1>Form Comercial</h1>
+  <p>Abra o formulário numa janelinha flutuante.</p>
+  <button id="open">Abrir em Picture-in-Picture</button>
+  <button id="popup">Abrir como Popup</button>
+  <p style="color:#94a3b8;font-size:13px;">Se não funcionar, use o botão “Popup”.</p>
+
+  <script>
+    async function openPiP() {
+      if (!('documentPictureInPicture' in window)) {
+        alert('Seu navegador não suporta Document PiP. Use o modo popup.');
+        return;
+      }
+      const pipWin = await documentPictureInPicture.requestWindow({width: 420, height: 640});
+      const iframe = pipWin.document.createElement('iframe');
+      iframe.src = './pip-form.html';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = '0';
+      pipWin.document.body.style.margin = '0';
+      pipWin.document.body.appendChild(iframe);
+    }
+
+    function openPopup() {
+      const popup = window.open('./pip-form.html', 'formPopup', 'width=420,height=640');
+      if (!popup) alert('Bloqueador de popups ativo.');
+    }
+
+    document.getElementById('open').addEventListener('click', openPiP);
+    document.getElementById('popup').addEventListener('click', openPopup);
+  </script>
+</body>
+</html>
+
+git config --global user.email "italorizzo@outlook.com"
+git config --global user.name "italorizzo"

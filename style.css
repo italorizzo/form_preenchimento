@@ -1,0 +1,201 @@
+/* ========== Design System (PicPay) ========== */
+:root{
+  /* Cores base */
+  --brand-500:#21C25E;   /* PicPay green */
+  --brand-600:#1AAF55;
+  --brand-700:#129E48;
+  --brand-50:#E9F8F0;
+
+  --fg:#0F172A;          /* texto principal (quase preto) */
+  --muted:#667085;       /* texto secundário */
+  --bg:#FFFFFF;          /* fundo da página */
+  --card:#FFFFFF;        /* fundo de cartões */
+  --border:#E5E7EB;      /* borda neutra */
+  --focus:#21C25E;       /* anel de foco acessível */
+
+  --danger-50:#FEF2F2;
+  --danger-500:#EF4444;
+  --success-50:#F1FCF6;
+  --success-500:#22C55E;
+
+  /* Espaçamento & tipografia */
+  --radius:14px;
+  --radius-sm:10px;
+  --space:16px;
+  --space-sm:12px;
+  --space-lg:20px;
+  --shadow:0 6px 20px rgba(16,24,40,0.08);
+  --shadow-sm:0 2px 10px rgba(16,24,40,0.06);
+}
+
+*{box-sizing:border-box}
+html{font-size:16px}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:var(--bg);
+  color:var(--fg);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* ========= Layout (mobile-first) ========= */
+.wrap{
+  width:100%;
+  max-width:680px;           /* ideal para celular/grandes celulares */
+  margin:0 auto;
+  padding:var(--space);
+}
+h1{
+  font-size:1.25rem;         /* 20px */
+  margin:0 0 var(--space-sm);
+  font-weight:700;
+  letter-spacing:.2px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:var(--space);
+  margin-bottom:var(--space);
+  box-shadow:var(--shadow-sm);
+}
+
+/* Grid: 1 coluna no mobile; sobe para 2 colunas em telas >= 640px */
+.row, .row-1{display:grid; gap:var(--space-sm)}
+.row-1{grid-template-columns:1fr}
+.row{grid-template-columns:1fr}
+
+@media (min-width:640px){
+  .wrap{max-width:820px}
+  .row{grid-template-columns:1fr 1fr}
+}
+@media (min-width:1024px){
+  .wrap{max-width:900px}
+}
+
+/* ========= Form ========= */
+label{
+  font-size:.82rem;
+  color:var(--muted);
+  display:block;
+  margin:0 0 6px;
+}
+input[type="text"],
+input[type="number"],
+select,
+textarea{
+  width:100%;
+  padding:12px 14px;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:#FFF;
+  color:var(--fg);
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+  min-height:44px;           /* alvo táctil recomendado */
+}
+textarea{min-height:100px; resize:vertical}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:var(--focus);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+}
+
+/* Estados inválidos (HTML5) */
+input:invalid:focus,
+select:invalid:focus,
+textarea:invalid:focus{
+  border-color:var(--danger-500);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--danger-500) 25%, transparent);
+}
+
+.hint{
+  font-size:.75rem;
+  color:#98A2B3;
+  margin-top:6px;
+}
+
+/* ========= Botões ========= */
+button{
+  border:0;
+  padding:12px 16px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:700;
+  transition:transform .02s ease, box-shadow .15s ease, background .15s ease;
+}
+.primary{
+  background:var(--brand-500);
+  color:#031B0F;
+  box-shadow:var(--shadow);
+}
+.primary:hover{background:var(--brand-600)}
+.primary:active{transform:translateY(1px)}
+.primary:disabled{opacity:.6; cursor:not-allowed}
+
+.ghost{
+  background:#fff;
+  color:var(--fg);
+  border:1px solid var(--border);
+}
+.ghost:hover{background:#F9FAFB}
+
+/* Barra de ações fixa ao fim do card no mobile */
+.actions{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  margin-top:var(--space-sm);
+}
+
+/* Utilidades */
+.hidden{display:none !important}
+.req::after{content:" *"; color:var(--danger-500)}
+
+/* Toasters/status em verde/vermelho PicPay friendly */
+.ok{
+  border:1px solid var(--brand-500);
+  background:var(--success-50);
+}
+.err{
+  border:1px solid var(--danger-500);
+  background:var(--danger-50);
+}
+
+/* ========= “Cartão” destacado para blocos (ex.: Venda/Renovação) ========= */
+.section-title{
+  display:flex; align-items:center; gap:8px;
+  margin:-4px 0 var(--space-sm);
+  font-weight:700; color:#0B1F16;
+}
+.badge{
+  display:inline-block;
+  font-size:.72rem;
+  padding:4px 8px;
+  border-radius:999px;
+  background:var(--brand-50);
+  color:var(--brand-700);
+}
+
+/* ========= Dark-mode opcional (segue sua versão anterior, mas com verde PicPay) ========= */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0b0c10;
+    --card:#111318;
+    --border:#1f2937;
+    --muted:#9aa3af;
+    --fg:#e5e7eb;
+  }
+  .ghost{background:transparent; color:var(--fg); border:1px solid var(--border)}
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea{background:#0b1220; border-color:#334155; color:var(--fg)}
+  .primary{color:#07160D}
+  .ok{background:#052e16}
+  .err{background:#450a0a}
+}

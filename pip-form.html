@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Formulário Comercial</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <!-- FORM VISUAL (seus campos e regras) -->
+  <form id="uiForm" class="card" autocomplete="off">
+    <div class="row">
+      <div>
+        <label class="req" for="consumerId">Consumer ID</label>
+        <input id="consumerId" type="text" required placeholder="ex: 1234567890"/>
+      </div>
+      <div>
+        <label class="req" for="tipo">Tipo</label>
+        <select id="tipo" required>
+          <option value="" disabled selected>Selecione…</option>
+          <option value="Renovação">Renovação</option>
+          <option value="Venda">Venda</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- RENOVAÇÃO -->
+    <div id="renovacaoBlk" class="card hidden" style="margin-top: 20px;">
+      <h1>Renovação</h1>
+      <div class="row">
+        <div>
+          <label class="req" for="statusRenov">Status</label>
+          <select id="statusRenov">
+            <option value="" disabled selected>Selecione…</option>
+            <option value="Renovado">Renovado</option>
+            <option value="Negociando">Negociando</option>
+            <option value="Não Renovado">Não Renovado</option>
+          </select>
+        </div>
+        <div id="produtoRenovWrap" class="hidden">
+          <label class="req" for="produtoRenov">Produto</label>
+          <select id="produtoRenov"></select>
+        </div>
+      </div>
+
+      <div id="valorRenovRow" class="row hidden">
+        <div>
+          <label class="req" for="valorRenov">Valor de Aplicação</label>
+          <input id="valorRenov" inputmode="decimal" type="number" step="0.01" min="0" placeholder="0,00"/>
+          <div class="hint">Aceita vírgula ou ponto; enviaremos no formato que o Forms espera.</div>
+        </div>
+        <div>
+          <label class="req" for="motivoRenov">Motivo da Renovação</label>
+          <input id="motivoRenov" type="text" placeholder="ex: rentabilidade, liquidez, etc."/>
+        </div>
+      </div>
+
+      <div id="motivoNaoRenovWrap" class="row-1 hidden">
+        <div>
+          <label class="req" for="motivoNaoRenov">Motivo de Não Renovar</label>
+          <textarea id="motivoNaoRenov" placeholder="ex: precisou de liquidez, trocou de instituição…"></textarea>
+        </div>
+      </div>
+
+      <div id="negociandoInfo" class="row-1 hidden">
+        <div class="hint">Status “Negociando”: nenhum outro campo é necessário.</div>
+      </div>
+    </div>
+
+    <!-- VENDA -->
+    <div id="vendaBlk" class="card hidden" style="margin-top: 20px;">
+      <h1>Venda</h1>
+      <div class="row">
+        <div>
+          <label class="req" for="produtoVenda">Produto</label>
+          <select id="produtoVenda"></select>
+        </div>
+        <div id="valorVendaWrap" class="hidden">
+          <label class="req" for="valorVenda">Valor</label>
+          <input id="valorVenda" inputmode="decimal" type="number" step="0.01" min="0" placeholder="0,00"/>
+          <div class="hint">Obrigatório para produtos financeiros listados.</div>
+        </div>
+      </div>
+
+      <div class="row-1">
+        <div>
+          <label for="comentarioVenda">Comentário (opcional)</label>
+          <textarea id="comentarioVenda" placeholder="Observações adicionais…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="ghost" id="resetBtn">Limpar</button>
+      <button type="submit" class="primary">Enviar</button>
+    </div>
+  </form>
+
+  <!-- STATUS -->
+  <div id="status" class="card hidden"></div>
+
+  <!-- FORM QUE VAI PARA O GOOGLE FORM (inputs mapeados e iframe oculto) -->
+  <iframe name="hidden_iframe" style="display:none"></iframe>
+  <form id="gform" class="hidden" method="POST" target="hidden_iframe"
+        action="https://docs.google.com/forms/d/e/1FAIpQLSdEJ6fn-HOs4lvpkuj4yjTRA3vWNJGY5qJOpymzcv5lIJeWHg/formResponse">
+    <!-- IDs reais do seu Google Form -->
+    <input type="text" name="entry.1600437531" id="gf_consumer"/>
+    <input type="text" name="entry.197305973"  id="gf_tipo"/>
+    <input type="text" name="entry.493487500"  id="gf_status"/>
+    <input type="text" name="entry.1837718152" id="gf_produto"/>
+    <input type="text" name="entry.1867934044" id="gf_valor"/>
+    <input type="text" name="entry.1582583096" id="gf_motivo"/>
+    <input type="text" name="entry.1242182344" id="gf_comentario"/>
+  </form>
+</div>
+
+<script>
+/* ===================== Catálogos ===================== */
+const PRODUTOS_RENOV = [
+  "CDB PicPay com Liquidez","CDB PicPay Prazo","Cofrinho",
+  "CCB Digital","Fundo de Investimento","Renda Fixa",
+];
+const PRODUTOS_VENDA_VALOR = [
+  "CDB PicPay com Liquidez","CDB PicPay Prazo","Cofrinho","CCB Digital",
+  "Fundo de Investimento","Renda Fixa","CP Clean","Crédito Trabalhador",
+  "CGV","Consignado","FGTS",
+];
+const PRODUTOS_VENDA_SEM_VALOR = [
+  "Upgrade de Cartão","Contratação de Cartão","Open Finance","Chave PIX",
+];
+const PRODUTOS_VENDA = [...PRODUTOS_VENDA_VALOR, ...PRODUTOS_VENDA_SEM_VALOR];
+
+/* ===================== DOM (UI) ===================== */
+const uiForm = document.getElementById('uiForm');
+const statusBox = document.getElementById('status');
+
+const consumerId = document.getElementById('consumerId');
+const tipo = document.getElementById('tipo');
+
+const renovBlk = document.getElementById('renovacaoBlk');
+const statusRenov = document.getElementById('statusRenov');
+const produtoRenovWrap = document.getElementById('produtoRenovWrap');
+const produtoRenov = document.getElementById('produtoRenov');
+const valorRenovRow = document.getElementById('valorRenovRow');
+const valorRenov = document.getElementById('valorRenov');
+const motivoRenov = document.getElementById('motivoRenov');
+const motivoNaoRenovWrap = document.getElementById('motivoNaoRenovWrap');
+const motivoNaoRenov = document.getElementById('motivoNaoRenov');
+const negociandoInfo = document.getElementById('negociandoInfo');
+
+const vendaBlk = document.getElementById('vendaBlk');
+const produtoVenda = document.getElementById('produtoVenda');
+const valorVendaWrap = document.getElementById('valorVendaWrap');
+const valorVenda = document.getElementById('valorVenda');
+const comentarioVenda = document.getElementById('comentarioVenda');
+
+/* ===================== Helpers ===================== */
+const show = (el,on=true)=> el.classList.toggle('hidden',!on);
+const setReq = (el,on=true)=> el.toggleAttribute('required',on);
+
+function fillOptions(select, items, placeholder="Selecione…"){
+  select.innerHTML = "";
+  const ph = document.createElement('option');
+  ph.value = ""; ph.disabled = true; ph.selected = true; ph.textContent = placeholder;
+  select.appendChild(ph);
+  items.forEach(v=>{
+    const o = document.createElement('option'); o.value=v; o.textContent=v; select.appendChild(o);
+  });
+}
+fillOptions(produtoRenov, PRODUTOS_RENOV);
+fillOptions(produtoVenda, PRODUTOS_VENDA);
+
+/* ===================== Regras UI ===================== */
+tipo.addEventListener('change', ()=>{
+  const t = tipo.value;
+  show(renovBlk, t==='Renovação');
+  show(vendaBlk, t==='Venda');
+
+  // reset blocos e obrigatoriedade
+  statusRenov.value = "";
+  produtoRenov.value = "";
+  valorRenov.value = "";
+  motivoRenov.value = "";
+  motivoNaoRenov.value = "";
+  comentarioVenda.value = "";
+  produtoVenda.value = "";
+  valorVenda.value = "";
+
+  show(produtoRenovWrap,false);
+  show(valorRenovRow,false);
+  show(motivoNaoRenovWrap,false);
+  show(negociandoInfo,false);
+  show(valorVendaWrap,false);
+
+  setReq(statusRenov, t==='Renovação');
+  setReq(produtoRenov,false);
+  setReq(valorRenov,false);
+  setReq(motivoRenov,false);
+  setReq(motivoNaoRenov,false);
+
+  setReq(produtoVenda, t==='Venda');
+  setReq(valorVenda,false);
+});
+
+statusRenov.addEventListener('change', ()=>{
+  const s = statusRenov.value;
+  show(produtoRenovWrap,false);
+  show(valorRenovRow,false);
+  show(motivoNaoRenovWrap,false);
+  show(negociandoInfo,false);
+  setReq(produtoRenov,false);
+  setReq(valorRenov,false);
+  setReq(motivoRenov,false);
+  setReq(motivoNaoRenov,false);
+
+  if (s==='Renovado'){
+    show(produtoRenovWrap,true);
+    show(valorRenovRow,true);
+    setReq(produtoRenov,true);
+    setReq(valorRenov,true);
+    setReq(motivoRenov,true);
+  } else if (s==='Negociando'){
+    show(negociandoInfo,true);
+  } else if (s==='Não Renovado'){
+    show(motivoNaoRenovWrap,true);
+    setReq(motivoNaoRenov,true);
+  }
+});
+
+produtoVenda.addEventListener('change', ()=>{
+  const precisaValor = PRODUTOS_VENDA_VALOR.includes(produtoVenda.value);
+  show(valorVendaWrap, precisaValor);
+  setReq(valorVenda, precisaValor);
+  if (!precisaValor) valorVenda.value = "";
+});
+
+/* ===================== MAPEAMENTO → Google Form ===================== */
+const gform = document.getElementById('gform');
+const gf_consumer   = document.getElementById('gf_consumer');   // entry.1600437531
+const gf_tipo       = document.getElementById('gf_tipo');       // entry.197305973
+const gf_status     = document.getElementById('gf_status');     // entry.493487500
+const gf_produto    = document.getElementById('gf_produto');    // entry.1837718152
+const gf_valor      = document.getElementById('gf_valor');      // entry.1867934044
+const gf_motivo     = document.getElementById('gf_motivo');     // entry.1582583096
+const gf_comentario = document.getElementById('gf_comentario'); // entry.1242182344
+
+function setStatus(ok,msg){
+  statusBox.className = 'card ' + (ok ? 'ok':'err');
+  statusBox.textContent = msg;
+  show(statusBox,true);
+}
+
+/* Normaliza número: aceita 1.234,56 | 1234.56 → envia "1234,56" (compatível com pt-BR) */
+function normalizeToPtBRNumber(txt){
+  if (txt == null || txt === "") return "";
+  // remove separador de milhar . e troca decimal . por ,
+  const clean = String(txt).replace(/\./g,'').replace(',', '.');
+  const num = Number(clean);
+  if (Number.isNaN(num)) return "";
+  // envia com vírgula (como no exemplo do seu formulário)
+  return String(num).replace('.',',');
+}
+// --- Auto-hide do status em 3s ---
+let statusTimer = null;
+function hideStatus() {
+  show(statusBox, false); // ou: statusBox.classList.add('hidden')
+}
+
+/* Submissão: preenche os entry.* e dispara o POST para o iframe */
+uiForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  // limpa qualquer timer pendente de mensagens antigas
+  clearTimeout(statusTimer);
+
+  // validações mínimas (UI já cobre, mas reforçamos)
+  if (!consumerId.value.trim()) { setStatus(false, 'Consumer ID é obrigatório.'); return; }
+  if (!tipo.value) { setStatus(false, 'Selecione o Tipo.'); return; }
+
+  // Preenche obrigatórios base
+  gf_consumer.value = consumerId.value.trim();
+  gf_tipo.value = tipo.value; // "Renovação" | "Venda"
+  gf_status.value = "";
+  gf_produto.value = "";
+  gf_valor.value = "";
+  gf_motivo.value = "";
+  gf_comentario.value = (comentarioVenda.value || "").trim();
+
+  if (tipo.value === 'Renovação') {
+    const s = statusRenov.value;
+    if (!s) { setStatus(false, 'Selecione o Status da Renovação.'); return; }
+    gf_status.value = s;
+
+    if (s === 'Renovado') {
+      if (!produtoRenov.value) { setStatus(false, 'Selecione o Produto.'); return; }
+      if (!valorRenov.value) { setStatus(false, 'Informe o Valor de Aplicação.'); return; }
+      if (!motivoRenov.value.trim()) { setStatus(false, 'Informe o Motivo da Renovação.'); return; }
+
+      gf_produto.value = produtoRenov.value;
+      gf_valor.value   = normalizeToPtBRNumber(valorRenov.value);
+      gf_motivo.value  = motivoRenov.value.trim();
+    } else if (s === 'Não Renovado') {
+      if (!motivoNaoRenov.value.trim()) { setStatus(false, 'Informe o Motivo de Não Renovar.'); return; }
+      gf_motivo.value = motivoNaoRenov.value.trim();
+    }
+    // Negociando → nada extra
+  }
+
+  if (tipo.value === 'Venda') {
+    if (!produtoVenda.value) { setStatus(false, 'Selecione o Produto.'); return; }
+    gf_produto.value = produtoVenda.value;
+
+    if (PRODUTOS_VENDA_VALOR.includes(produtoVenda.value)) {
+      if (!valorVenda.value) { setStatus(false, 'Informe o Valor para este produto.'); return; }
+      gf_valor.value = normalizeToPtBRNumber(valorVenda.value);
+    }
+    // Comentário já preenchido acima
+  }
+
+  // Envia para o Google Form (iframe oculto) – à prova de sombra
+  try {
+    if (typeof gform.requestSubmit === 'function') {
+      gform.requestSubmit();
+    } else {
+      HTMLFormElement.prototype.submit.call(gform);
+    }
+
+    setStatus(true, 'Enviado com sucesso.');
+
+    // esconde a mensagem de sucesso após 3 segundos
+    statusTimer = setTimeout(hideStatus, 3000);
+
+    uiForm.reset();
+    // esconder blocos após reset
+    [renovBlk, vendaBlk, produtoRenovWrap, valorRenovRow, motivoNaoRenovWrap, negociandoInfo, valorVendaWrap]
+      .forEach(el => show(el, false));
+
+  } catch (err) {
+    setStatus(false, 'Falha ao enviar: ' + err);
+    // opcional: também esconder erro após 3s (remova se preferir deixar visível)
+    statusTimer = setTimeout(hideStatus, 3000);
+  }
+});
+
+/* Botão de limpar */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  clearTimeout(statusTimer);
+  hideStatus();
+
+  uiForm.reset();
+  [renovBlk, vendaBlk, produtoRenovWrap, valorRenovRow, motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, statusBox]
+    .forEach(el => show(el, false));
+});
+
+/* UX: evita Enter acidental enviar */
+uiForm.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
+});
+
+/* Opcional: ao digitar, esconda qualquer toast antigo */
+uiForm.addEventListener('input', () => {
+  clearTimeout(statusTimer);
+  hideStatus();
+});
+</script>
+</body>
+</html>
