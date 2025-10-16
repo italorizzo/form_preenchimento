@@ -43,6 +43,12 @@
           <label class="req" for="produtoRenov">Produto</label>
           <select id="produtoRenov"></select>
         </div>
+
+        <!-- PRAZO DA RENOVAÇÃO -->
+        <div id="prazoRenovWrap" class="hidden">
+          <label class="req" for="prazoRenov">Prazo</label>
+          <select id="prazoRenov"></select>
+        </div>
       </div>
 
       <div id="valorRenovRow" class="row hidden">
@@ -77,6 +83,13 @@
           <label class="req" for="produtoVenda">Produto</label>
           <select id="produtoVenda"></select>
         </div>
+
+        <!-- PRAZO DA VENDA (exigido só quando necessário) -->
+        <div id="prazoVendaWrap" class="hidden">
+          <label class="req" for="prazoVenda">Prazo</label>
+          <select id="prazoVenda"></select>
+        </div>
+
         <div id="valorVendaWrap" class="hidden">
           <label class="req" for="valorVenda">Valor</label>
           <input id="valorVenda" inputmode="decimal" type="number" step="0.01" min="0" placeholder="0,00"/>
@@ -113,13 +126,14 @@
     <input type="text" name="entry.1867934044" id="gf_valor"/>
     <input type="text" name="entry.1582583096" id="gf_motivo"/>
     <input type="text" name="entry.1242182344" id="gf_comentario"/>
+    <input type="text" name="entry.1673103075" id="gf_prazo"/>
   </form>
 </div>
 
 <script>
 /* ===================== Catálogos ===================== */
 const PRODUTOS_RENOV = [
-  "CDB PicPay com Liquidez","CDB PicPay Prazo","Cofrinho",
+  "CDB PicPay com Liquidez","CDB PicPay Prazo",
   "CCB Digital","Fundo de Investimento","Renda Fixa",
 ];
 const PRODUTOS_VENDA_VALOR = [
@@ -132,6 +146,17 @@ const PRODUTOS_VENDA_SEM_VALOR = [
 ];
 const PRODUTOS_VENDA = [...PRODUTOS_VENDA_VALOR, ...PRODUTOS_VENDA_SEM_VALOR];
 
+/* Catálogo de prazos (inclui Liquidez) */
+const PRAZOS = [
+  "Liquidez",
+  "1M","3M","6M","9M","12M","14M","18M","22M",
+  "24M","30M","36M","42M","48M","60M","72M","76M"
+];
+
+/* Produtos que NÃO pedem prazo (regra solicitada) */
+const NO_PRAZO = ["Fundo de Investimento"];
+const needsPrazo = (produto) => PRODUTOS_RENOV.includes(produto) && !NO_PRAZO.includes(produto);
+
 /* ===================== DOM (UI) ===================== */
 const uiForm = document.getElementById('uiForm');
 const statusBox = document.getElementById('status');
@@ -143,6 +168,8 @@ const renovBlk = document.getElementById('renovacaoBlk');
 const statusRenov = document.getElementById('statusRenov');
 const produtoRenovWrap = document.getElementById('produtoRenovWrap');
 const produtoRenov = document.getElementById('produtoRenov');
+const prazoRenovWrap = document.getElementById('prazoRenovWrap');
+const prazoRenov = document.getElementById('prazoRenov');
 const valorRenovRow = document.getElementById('valorRenovRow');
 const valorRenov = document.getElementById('valorRenov');
 const motivoRenov = document.getElementById('motivoRenov');
@@ -152,6 +179,8 @@ const negociandoInfo = document.getElementById('negociandoInfo');
 
 const vendaBlk = document.getElementById('vendaBlk');
 const produtoVenda = document.getElementById('produtoVenda');
+const prazoVendaWrap = document.getElementById('prazoVendaWrap');
+const prazoVenda = document.getElementById('prazoVenda');
 const valorVendaWrap = document.getElementById('valorVendaWrap');
 const valorVenda = document.getElementById('valorVenda');
 const comentarioVenda = document.getElementById('comentarioVenda');
@@ -171,6 +200,8 @@ function fillOptions(select, items, placeholder="Selecione…"){
 }
 fillOptions(produtoRenov, PRODUTOS_RENOV);
 fillOptions(produtoVenda, PRODUTOS_VENDA);
+fillOptions(prazoRenov, PRAZOS);
+fillOptions(prazoVenda, PRAZOS);
 
 /* ===================== Regras UI ===================== */
 tipo.addEventListener('change', ()=>{
@@ -181,36 +212,44 @@ tipo.addEventListener('change', ()=>{
   // reset blocos e obrigatoriedade
   statusRenov.value = "";
   produtoRenov.value = "";
+  prazoRenov.value = "";
   valorRenov.value = "";
   motivoRenov.value = "";
   motivoNaoRenov.value = "";
   comentarioVenda.value = "";
   produtoVenda.value = "";
+  prazoVenda.value = "";
   valorVenda.value = "";
 
   show(produtoRenovWrap,false);
+  show(prazoRenovWrap,false);
   show(valorRenovRow,false);
   show(motivoNaoRenovWrap,false);
   show(negociandoInfo,false);
   show(valorVendaWrap,false);
+  show(prazoVendaWrap,false);
 
   setReq(statusRenov, t==='Renovação');
   setReq(produtoRenov,false);
+  setReq(prazoRenov,false);
   setReq(valorRenov,false);
   setReq(motivoRenov,false);
   setReq(motivoNaoRenov,false);
 
   setReq(produtoVenda, t==='Venda');
+  setReq(prazoVenda,false);
   setReq(valorVenda,false);
 });
 
 statusRenov.addEventListener('change', ()=>{
   const s = statusRenov.value;
   show(produtoRenovWrap,false);
+  show(prazoRenovWrap,false);
   show(valorRenovRow,false);
   show(motivoNaoRenovWrap,false);
   show(negociandoInfo,false);
   setReq(produtoRenov,false);
+  setReq(prazoRenov,false);
   setReq(valorRenov,false);
   setReq(motivoRenov,false);
   setReq(motivoNaoRenov,false);
@@ -218,9 +257,14 @@ statusRenov.addEventListener('change', ()=>{
   if (s==='Renovado'){
     show(produtoRenovWrap,true);
     show(valorRenovRow,true);
+
     setReq(produtoRenov,true);
     setReq(valorRenov,true);
     setReq(motivoRenov,true);
+
+    // Prazo só aparece depois de escolher o produto (e só se precisar)
+    show(prazoRenovWrap,false);
+    setReq(prazoRenov,false);
   } else if (s==='Negociando'){
     show(negociandoInfo,true);
   } else if (s==='Não Renovado'){
@@ -229,11 +273,25 @@ statusRenov.addEventListener('change', ()=>{
   }
 });
 
+/* Quando escolher o produto da Renovação, decide se precisa prazo */
+produtoRenov.addEventListener('change', () => {
+  const precisaPrazo = needsPrazo(produtoRenov.value);
+  show(prazoRenovWrap, precisaPrazo);
+  setReq(prazoRenov, precisaPrazo);
+  if (!precisaPrazo) prazoRenov.value = "";
+});
+
 produtoVenda.addEventListener('change', ()=>{
   const precisaValor = PRODUTOS_VENDA_VALOR.includes(produtoVenda.value);
+  const precisaPrazo = needsPrazo(produtoVenda.value); // usa a mesma regra da renovação
+
   show(valorVendaWrap, precisaValor);
   setReq(valorVenda, precisaValor);
   if (!precisaValor) valorVenda.value = "";
+
+  show(prazoVendaWrap, precisaPrazo);
+  setReq(prazoVenda, precisaPrazo);
+  if (!precisaPrazo) prazoVenda.value = "";
 });
 
 /* ===================== MAPEAMENTO → Google Form ===================== */
@@ -245,48 +303,40 @@ const gf_produto    = document.getElementById('gf_produto');    // entry.1837718
 const gf_valor      = document.getElementById('gf_valor');      // entry.1867934044
 const gf_motivo     = document.getElementById('gf_motivo');     // entry.1582583096
 const gf_comentario = document.getElementById('gf_comentario'); // entry.1242182344
+const gf_prazo      = document.getElementById('gf_prazo');      // entry.1673103075
 
+/* toast helpers */
 function setStatus(ok,msg){
   statusBox.className = 'card ' + (ok ? 'ok':'err');
   statusBox.textContent = msg;
   show(statusBox,true);
 }
-
-/* Normaliza número: aceita 1.234,56 | 1234.56 → envia "1234,56" (compatível com pt-BR) */
 function normalizeToPtBRNumber(txt){
   if (txt == null || txt === "") return "";
-  // remove separador de milhar . e troca decimal . por ,
   const clean = String(txt).replace(/\./g,'').replace(',', '.');
   const num = Number(clean);
   if (Number.isNaN(num)) return "";
-  // envia com vírgula (como no exemplo do seu formulário)
   return String(num).replace('.',',');
 }
-// --- Auto-hide do status em 3s ---
 let statusTimer = null;
-function hideStatus() {
-  show(statusBox, false); // ou: statusBox.classList.add('hidden')
-}
+function hideStatus() { show(statusBox, false); }
 
-/* Submissão: preenche os entry.* e dispara o POST para o iframe */
+/* Submissão */
 uiForm.addEventListener('submit', (e) => {
   e.preventDefault();
-
-  // limpa qualquer timer pendente de mensagens antigas
   clearTimeout(statusTimer);
 
-  // validações mínimas (UI já cobre, mas reforçamos)
   if (!consumerId.value.trim()) { setStatus(false, 'Consumer ID é obrigatório.'); return; }
   if (!tipo.value) { setStatus(false, 'Selecione o Tipo.'); return; }
 
-  // Preenche obrigatórios base
   gf_consumer.value = consumerId.value.trim();
-  gf_tipo.value = tipo.value; // "Renovação" | "Venda"
+  gf_tipo.value = tipo.value;
   gf_status.value = "";
   gf_produto.value = "";
   gf_valor.value = "";
   gf_motivo.value = "";
   gf_comentario.value = (comentarioVenda.value || "").trim();
+  gf_prazo.value = ""; // zera sempre
 
   if (tipo.value === 'Renovação') {
     const s = statusRenov.value;
@@ -295,51 +345,50 @@ uiForm.addEventListener('submit', (e) => {
 
     if (s === 'Renovado') {
       if (!produtoRenov.value) { setStatus(false, 'Selecione o Produto.'); return; }
-      if (!valorRenov.value) { setStatus(false, 'Informe o Valor de Aplicação.'); return; }
+      const precisaPrazoRenov = needsPrazo(produtoRenov.value);
+      if (precisaPrazoRenov && !prazoRenov.value) { setStatus(false, 'Selecione o Prazo.'); return; }
+      if (!valorRenov.value)   { setStatus(false, 'Informe o Valor de Aplicação.'); return; }
       if (!motivoRenov.value.trim()) { setStatus(false, 'Informe o Motivo da Renovação.'); return; }
 
       gf_produto.value = produtoRenov.value;
+      gf_prazo.value   = precisaPrazoRenov ? prazoRenov.value : ""; // Fundo de Investimento → sem prazo
       gf_valor.value   = normalizeToPtBRNumber(valorRenov.value);
       gf_motivo.value  = motivoRenov.value.trim();
     } else if (s === 'Não Renovado') {
       if (!motivoNaoRenov.value.trim()) { setStatus(false, 'Informe o Motivo de Não Renovar.'); return; }
       gf_motivo.value = motivoNaoRenov.value.trim();
     }
-    // Negociando → nada extra
   }
 
   if (tipo.value === 'Venda') {
     if (!produtoVenda.value) { setStatus(false, 'Selecione o Produto.'); return; }
     gf_produto.value = produtoVenda.value;
 
+    const precisaPrazoVenda = needsPrazo(produtoVenda.value);
+    if (precisaPrazoVenda && !prazoVenda.value) { setStatus(false, 'Selecione o Prazo.'); return; }
+    gf_prazo.value = precisaPrazoVenda ? prazoVenda.value : ""; // Fundo de Investimento → sem prazo
+
     if (PRODUTOS_VENDA_VALOR.includes(produtoVenda.value)) {
       if (!valorVenda.value) { setStatus(false, 'Informe o Valor para este produto.'); return; }
       gf_valor.value = normalizeToPtBRNumber(valorVenda.value);
     }
-    // Comentário já preenchido acima
   }
 
-  // Envia para o Google Form (iframe oculto) – à prova de sombra
   try {
-    if (typeof gform.requestSubmit === 'function') {
-      gform.requestSubmit();
-    } else {
-      HTMLFormElement.prototype.submit.call(gform);
-    }
+    if (typeof gform.requestSubmit === 'function') gform.requestSubmit();
+    else HTMLFormElement.prototype.submit.call(gform);
 
     setStatus(true, 'Enviado com sucesso.');
-
-    // esconde a mensagem de sucesso após 3 segundos
     statusTimer = setTimeout(hideStatus, 3000);
 
     uiForm.reset();
-    // esconder blocos após reset
-    [renovBlk, vendaBlk, produtoRenovWrap, valorRenovRow, motivoNaoRenovWrap, negociandoInfo, valorVendaWrap]
-      .forEach(el => show(el, false));
+    [
+      renovBlk, vendaBlk, produtoRenovWrap, prazoRenovWrap, valorRenovRow,
+      motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, prazoVendaWrap
+    ].forEach(el => show(el, false));
 
   } catch (err) {
     setStatus(false, 'Falha ao enviar: ' + err);
-    // opcional: também esconder erro após 3s (remova se preferir deixar visível)
     statusTimer = setTimeout(hideStatus, 3000);
   }
 });
@@ -350,16 +399,16 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   hideStatus();
 
   uiForm.reset();
-  [renovBlk, vendaBlk, produtoRenovWrap, valorRenovRow, motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, statusBox]
-    .forEach(el => show(el, false));
+  [
+    renovBlk, vendaBlk, produtoRenovWrap, prazoRenovWrap, valorRenovRow,
+    motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, prazoVendaWrap, statusBox
+  ].forEach(el => show(el, false));
 });
 
-/* UX: evita Enter acidental enviar */
+/* UX extras */
 uiForm.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
 });
-
-/* Opcional: ao digitar, esconda qualquer toast antigo */
 uiForm.addEventListener('input', () => {
   clearTimeout(statusTimer);
   hideStatus();
