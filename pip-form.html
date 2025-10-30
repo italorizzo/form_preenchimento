@@ -16,6 +16,17 @@
         <label class="req" for="consumerId">Consumer ID</label>
         <input id="consumerId" type="text" required placeholder="ex: 1234567890"/>
       </div>
+
+      <!-- NOVO: PERFIL -->
+      <div>
+        <label class="req" for="perfil">Perfil</label>
+        <select id="perfil" required>
+          <option value="" disabled selected>Selecione…</option>
+          <option value="Especialista">Especialista</option>
+          <option value="Gerente">Gerente</option>
+        </select>
+      </div>
+
       <div>
         <label class="req" for="tipo">Tipo</label>
         <select id="tipo" required>
@@ -39,6 +50,7 @@
             <option value="Não Renovado">Não Renovado</option>
           </select>
         </div>
+
         <div id="produtoRenovWrap" class="hidden">
           <label class="req" for="produtoRenov">Produto</label>
           <select id="produtoRenov"></select>
@@ -63,10 +75,23 @@
         </div>
       </div>
 
+      <!-- NÃO RENOVADO → DROPDOWN + TEXTO (só quando “Outros”) -->
       <div id="motivoNaoRenovWrap" class="row-1 hidden">
         <div>
-          <label class="req" for="motivoNaoRenov">Motivo de Não Renovar</label>
-          <textarea id="motivoNaoRenov" placeholder="ex: precisou de liquidez, trocou de instituição…"></textarea>
+          <label class="req" for="motivoNaoRenovSelect">Motivo de Não Renovar</label>
+          <select id="motivoNaoRenovSelect">
+            <option value="" disabled selected>Selecione…</option>
+            <option value="Aquisição de Bens">Aquisição de Bens</option>
+            <option value="Uso Pessoal / Consumo">Uso Pessoal / Consumo</option>
+            <option value="Melhor Taxa em Concorrente">Melhor Taxa em Concorrente</option>
+            <option value="Produto Alternativo na Concorrência">Produto Alternativo na Concorrência</option>
+            <option value="Cliente em Atrito - Investimentos">Cliente em Atrito - Investimentos</option>
+            <option value="Cliente em Atrito - Cartões">Cliente em Atrito - Cartões</option>
+            <option value="Cliente em Atrito - Conta">Cliente em Atrito - Conta</option>
+            <option value="Outros">Outros</option>
+          </select>
+
+          <textarea id="motivoNaoRenovTexto" class="hidden" placeholder="Descreva o motivo..."></textarea>
         </div>
       </div>
 
@@ -120,6 +145,7 @@
         action="https://docs.google.com/forms/d/e/1FAIpQLSdEJ6fn-HOs4lvpkuj4yjTRA3vWNJGY5qJOpymzcv5lIJeWHg/formResponse">
     <!-- IDs reais do seu Google Form -->
     <input type="text" name="entry.1600437531" id="gf_consumer"/>
+    <input type="text" name="entry.1644305401" id="gf_perfil"/> 
     <input type="text" name="entry.197305973"  id="gf_tipo"/>
     <input type="text" name="entry.493487500"  id="gf_status"/>
     <input type="text" name="entry.1837718152" id="gf_produto"/>
@@ -162,6 +188,7 @@ const uiForm = document.getElementById('uiForm');
 const statusBox = document.getElementById('status');
 
 const consumerId = document.getElementById('consumerId');
+const perfil = document.getElementById('perfil');          // NOVO
 const tipo = document.getElementById('tipo');
 
 const renovBlk = document.getElementById('renovacaoBlk');
@@ -174,7 +201,8 @@ const valorRenovRow = document.getElementById('valorRenovRow');
 const valorRenov = document.getElementById('valorRenov');
 const motivoRenov = document.getElementById('motivoRenov');
 const motivoNaoRenovWrap = document.getElementById('motivoNaoRenovWrap');
-const motivoNaoRenov = document.getElementById('motivoNaoRenov');
+const motivoNaoRenovSelect = document.getElementById('motivoNaoRenovSelect');
+const motivoNaoRenovTexto = document.getElementById('motivoNaoRenovTexto');
 const negociandoInfo = document.getElementById('negociandoInfo');
 
 const vendaBlk = document.getElementById('vendaBlk');
@@ -187,7 +215,7 @@ const comentarioVenda = document.getElementById('comentarioVenda');
 
 /* ===================== Helpers ===================== */
 const show = (el,on=true)=> el.classList.toggle('hidden',!on);
-const setReq = (el,on=true)=> el.toggleAttribute('required',on);
+const setReq = (el,on=true)=> el?.toggleAttribute('required',on);
 
 function fillOptions(select, items, placeholder="Selecione…"){
   select.innerHTML = "";
@@ -215,7 +243,8 @@ tipo.addEventListener('change', ()=>{
   prazoRenov.value = "";
   valorRenov.value = "";
   motivoRenov.value = "";
-  motivoNaoRenov.value = "";
+  motivoNaoRenovSelect.value = "";
+  motivoNaoRenovTexto.value = "";
   comentarioVenda.value = "";
   produtoVenda.value = "";
   prazoVenda.value = "";
@@ -225,6 +254,7 @@ tipo.addEventListener('change', ()=>{
   show(prazoRenovWrap,false);
   show(valorRenovRow,false);
   show(motivoNaoRenovWrap,false);
+  show(motivoNaoRenovTexto,false);
   show(negociandoInfo,false);
   show(valorVendaWrap,false);
   show(prazoVendaWrap,false);
@@ -234,7 +264,8 @@ tipo.addEventListener('change', ()=>{
   setReq(prazoRenov,false);
   setReq(valorRenov,false);
   setReq(motivoRenov,false);
-  setReq(motivoNaoRenov,false);
+  setReq(motivoNaoRenovSelect,false);
+  setReq(motivoNaoRenovTexto,false);
 
   setReq(produtoVenda, t==='Venda');
   setReq(prazoVenda,false);
@@ -247,12 +278,15 @@ statusRenov.addEventListener('change', ()=>{
   show(prazoRenovWrap,false);
   show(valorRenovRow,false);
   show(motivoNaoRenovWrap,false);
+  show(motivoNaoRenovTexto,false);
   show(negociandoInfo,false);
+
   setReq(produtoRenov,false);
   setReq(prazoRenov,false);
   setReq(valorRenov,false);
   setReq(motivoRenov,false);
-  setReq(motivoNaoRenov,false);
+  setReq(motivoNaoRenovSelect,false);
+  setReq(motivoNaoRenovTexto,false);
 
   if (s==='Renovado'){
     show(produtoRenovWrap,true);
@@ -269,7 +303,7 @@ statusRenov.addEventListener('change', ()=>{
     show(negociandoInfo,true);
   } else if (s==='Não Renovado'){
     show(motivoNaoRenovWrap,true);
-    setReq(motivoNaoRenov,true);
+    setReq(motivoNaoRenovSelect,true);
   }
 });
 
@@ -279,6 +313,14 @@ produtoRenov.addEventListener('change', () => {
   show(prazoRenovWrap, precisaPrazo);
   setReq(prazoRenov, precisaPrazo);
   if (!precisaPrazo) prazoRenov.value = "";
+});
+
+/* “Outros” → mostra textarea obrigatório */
+motivoNaoRenovSelect.addEventListener('change', () => {
+  const outros = motivoNaoRenovSelect.value === 'Outros';
+  show(motivoNaoRenovTexto, outros);
+  setReq(motivoNaoRenovTexto, outros);
+  if (!outros) motivoNaoRenovTexto.value = "";
 });
 
 produtoVenda.addEventListener('change', ()=>{
@@ -297,6 +339,7 @@ produtoVenda.addEventListener('change', ()=>{
 /* ===================== MAPEAMENTO → Google Form ===================== */
 const gform = document.getElementById('gform');
 const gf_consumer   = document.getElementById('gf_consumer');   // entry.1600437531
+const gf_perfil     = document.getElementById('gf_perfil');     // entry.1644305401 
 const gf_tipo       = document.getElementById('gf_tipo');       // entry.197305973
 const gf_status     = document.getElementById('gf_status');     // entry.493487500
 const gf_produto    = document.getElementById('gf_produto');    // entry.1837718152
@@ -327,16 +370,18 @@ uiForm.addEventListener('submit', (e) => {
   clearTimeout(statusTimer);
 
   if (!consumerId.value.trim()) { setStatus(false, 'Consumer ID é obrigatório.'); return; }
+  if (!perfil.value) { setStatus(false, 'Selecione o Perfil.'); return; }
   if (!tipo.value) { setStatus(false, 'Selecione o Tipo.'); return; }
 
   gf_consumer.value = consumerId.value.trim();
-  gf_tipo.value = tipo.value;
-  gf_status.value = "";
-  gf_produto.value = "";
-  gf_valor.value = "";
-  gf_motivo.value = "";
+  gf_perfil.value   = perfil.value;   // NOVO
+  gf_tipo.value     = tipo.value;
+  gf_status.value   = "";
+  gf_produto.value  = "";
+  gf_valor.value    = "";
+  gf_motivo.value   = "";
   gf_comentario.value = (comentarioVenda.value || "").trim();
-  gf_prazo.value = ""; // zera sempre
+  gf_prazo.value    = ""; // zera sempre
 
   if (tipo.value === 'Renovação') {
     const s = statusRenov.value;
@@ -354,9 +399,23 @@ uiForm.addEventListener('submit', (e) => {
       gf_prazo.value   = precisaPrazoRenov ? prazoRenov.value : ""; // Fundo de Investimento → sem prazo
       gf_valor.value   = normalizeToPtBRNumber(valorRenov.value);
       gf_motivo.value  = motivoRenov.value.trim();
+
     } else if (s === 'Não Renovado') {
-      if (!motivoNaoRenov.value.trim()) { setStatus(false, 'Informe o Motivo de Não Renovar.'); return; }
-      gf_motivo.value = motivoNaoRenov.value.trim();
+      if (!motivoNaoRenovSelect.value) {
+        setStatus(false, 'Selecione o Motivo de Não Renovar.');
+        return;
+      }
+      if (motivoNaoRenovSelect.value === 'Outros') {
+        if (!motivoNaoRenovTexto.value.trim()) {
+          setStatus(false, 'Descreva o motivo em "Outros".');
+          return;
+        }
+        gf_motivo.value = motivoNaoRenovTexto.value.trim();
+      } else {
+        gf_motivo.value = motivoNaoRenovSelect.value;
+      }
+    } else if (s === 'Negociando') {
+      // nada extra
     }
   }
 
@@ -384,7 +443,7 @@ uiForm.addEventListener('submit', (e) => {
     uiForm.reset();
     [
       renovBlk, vendaBlk, produtoRenovWrap, prazoRenovWrap, valorRenovRow,
-      motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, prazoVendaWrap
+      motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, prazoVendaWrap, motivoNaoRenovTexto
     ].forEach(el => show(el, false));
 
   } catch (err) {
@@ -401,7 +460,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   uiForm.reset();
   [
     renovBlk, vendaBlk, produtoRenovWrap, prazoRenovWrap, valorRenovRow,
-    motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, prazoVendaWrap, statusBox
+    motivoNaoRenovWrap, negociandoInfo, valorVendaWrap, prazoVendaWrap, statusBox, motivoNaoRenovTexto
   ].forEach(el => show(el, false));
 });
 
